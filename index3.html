@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Comparador de Packs de Fertilidad</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body { margin: 0; font-family: Arial, sans-serif; background: #f4f7fb; color: #333; }
+.sidebar { position: fixed; top: 0; left: 0; width: 100%; height: 70px; background: linear-gradient(180deg, #d5006d, #ff4081); color: #fff; display: flex; align-items: center; gap: 12px; padding: 0 16px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+.sidebar-title { font-size: 1.3rem; font-weight: bold; color: #fff; margin: 0; margin-right: auto; }
+.content { margin-top: 90px; padding: 30px; }
+.main-title { padding: 20px; font-size: 1.5rem; font-weight: bold; color: #d5006d; background: #fff; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+.section { background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
+.intro-text { font-size: 1rem; color: #555; margin: 10px auto 20px auto; max-width: 800px; text-align: center; line-height: 1.5; }
+
+.button-container { margin-top: 1rem; text-align: center; }
+.button-container button { width: 100%; max-width: 400px; padding: 12px 20px; font-size: 1.1rem; font-weight: bold; background-color: #d5006d; color: white; border: none; border-radius: 10px; cursor: pointer; }
+.button-container button:hover { background: #a30050; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+th { background-color: #f8bbd0; }
+#profitChart { max-width: 100%; height: 400px !important; }
+
+/* Packs */
+.packs-container { display: flex; flex-direction: column; align-items: center; gap: 2rem; padding: 0.5rem; }
+.card { width: 100%; max-width: 700px; background: #f8bbd0; padding: 1rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.product-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.5rem; }
+.product-row .product-name { min-width: 90px; font-weight: bold; }
+.product-row input { flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; }
+.inputs-table { width: 100%; border-collapse: collapse; }
+.inputs-table th, .inputs-table td { padding: 6px; text-align: center; }
+.inputs-table input { width: 80px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; }
+
+.packs-container-horizontal { display: flex; flex-wrap: nowrap; gap: 1rem; overflow-x: auto; padding: 1rem 0; }
+.packs-container-horizontal::-webkit-scrollbar { height: 8px; }
+.packs-container-horizontal::-webkit-scrollbar-thumb { background: #d5006d; border-radius: 4px; }
+
+.pack1 { background-color: #f8d1dc; }
+.pack2 { background-color: #d9f0e1; }
+.pack1 input { background-color: #ffe6f0; }
+.pack2 input { background-color: #e6f9f1; }
+.pack1 th { background-color: #f8b0c8; color: #333; }
+.pack2 th { background-color: #c8efd8; color: #333; }
+.pack1 h3 { color: #d5006d; }
+.pack2 h3 { color: #009688; }
+
+.kpi-grid { display: flex; gap: 12px; margin: 20px 0; align-items: stretch; }
+.kpi-card { flex: 1; background: #ffffff; padding: 12px; border-radius: 10px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.04); }
+.kpi-card h4 { margin: 0 0 8px 0; color: #d5006d; font-size: 0.95rem; }
+.kpi-value { font-size: 1.25rem; font-weight: 700; color: #222; }
+.kpi-card.best { box-shadow: 0 6px 18px rgba(0, 128, 0, 0.12); border: 2px solid #2e8b57; }
+
+.fertility-intro { background-color: #fdf5f8; border-left: 4px solid #d5006d; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; }
+.fertility-intro h2 { color: #d5006d; font-size: 1.6rem; margin-bottom: 0.8rem; }
+.fertility-intro p { color: #444; line-height: 1.6; margin-bottom: 1rem; }
+.fertility-intro a { color: #d5006d; text-decoration: underline; }
+
+.highlight-section {
+    background-color: #fff0f5;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.highlight-section h2 {
+    color: #d5006d;
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.benefit-container {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.benefit-card {
+    flex: 1 1 300px; /* ancho mínimo y flexible */
+    background-color: #ffe6f0;
+    border-radius: 12px;
+    padding: 1.2rem;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.benefit-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+.benefit-card i {
+    font-size: 2rem;
+    color: #d5006d;
+    margin-bottom: 0.5rem;
+}
+
+.benefit-card h3 {
+    font-size: 1.2rem;
+    color: #d5006d;
+    margin: 0.5rem 0;
+}
+
+.benefit-card p {
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.5;
+}
+
+.results-table-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table th, table td {
+    padding: 6px;
+    text-align: center;
+    min-width: 120px; /* columnas no se comprimen demasiado */
+}
+
+/* Contenedor de la tabla */
+.results-table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    background: #fff;
+    padding: 12px;
+}
+
+/* Tabla */
+.results-table-container table {
+    width: 100%;
+    border-collapse: separate; /* permite bordes redondeados */
+    border-spacing: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Cabecera */
+.results-table-container th {
+    background: linear-gradient(90deg, #d5006d, #ff4081);
+    color: #fff;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+/* Celdas */
+.results-table-container td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.95rem;
+}
+
+/* Renglones de optimización (rayo ⚡) */
+.results-table-container tr.optimized {
+    background: #e0f7fa;
+    font-weight: bold;
+    color: #222;
+}
+
+/* Alternar colores de fila para mejor lectura */
+.results-table-container tr:nth-child(even) {
+    background: #fdf5f8;
+}
+
+/* Hover para filas */
+.results-table-container tr:hover {
+    background: #ffe6f0;
+}
+
+/* Columnas clave (Ingresos / Utilidad) destacadas */
+.results-table-container td:nth-child(5),
+.results-table-container td:nth-child(6) {
+    font-weight: 700;
+    color: #d5006d;
+}
+
+</style>
+</head>
+<body>
+
+<div class="sidebar" style="display:flex; flex-direction:column; padding:12px; gap:6px;">
+    <h2 class="sidebar-title"><i class="fa-solid fa-gift"></i> Packs de Fertilidad – Optimiza tu Estrategia</h2>
+    <div style="font-size:0.85rem; color:#ffd6e0; max-width:400px; line-height:1.2;">
+        Calcula costos y rentabilidad de cada pack.
+    </div>
+    <a href="#resultsTable" style="align-self:flex-end; background:#fff; color:#d5006d; padding:6px 12px; border-radius:6px; font-weight:bold; text-decoration:none;">
+        Ver Resultados
+    </a>
+</div>
+
+<div class="content">
+    <div class="main-title">❤️ Comparador de Packs de Fertilidad</div>
+    <p class="intro-text">
+        Esta herramienta permite comparar diferentes <strong>packs de fertilidad</strong>, calculando su costo total, descuentos aplicados y unidades vendidas. 
+        Identifica rápida y visualmente cuál pack es más conveniente económicamente.
+    </p>
+
+    <!-- KPI cards -->
+    <div id="kpi-container" class="kpi-grid">
+        <div class="kpi-card">
+            <h4>💰 Pack más rentable</h4>
+            <div id="kpi-rentable" class="kpi-value">—</div>
+        </div>
+        <div class="kpi-card">
+            <h4>🏷️ Pack más económico (costo total)</h4>
+            <div id="kpi-economico" class="kpi-value">—</div>
+        </div>
+        <div class="kpi-card">
+            <h4>📊 Margen promedio (%)</h4>
+            <div id="kpi-ahorro" class="kpi-value">—</div>
+        </div>
+    </div>
+
+   <section class="section fertility-intro">
+  <h2><i class="fa-solid fa-baby"></i> Fertilidad en Ecuador 👶</h2>
+
+  <p>
+    En 2024, Ecuador registró <strong>215.714 nacimientos vivos</strong> 🍼, 
+    reflejando una disminución de 23.963 nacimientos con respecto al año anterior.  
+    <a href="https://www.ecuadorencifras.gob.ec/institucional/menos-nacimientos-y-cambios-en-los-patrones-maternos-marcan-la-dinamica-demografica-en-ecuador/?utm_source=chatgpt.com" target="_blank">Fuente: Ecuador en Cifras</a>
+  </p>
+
+  <p>
+    La <strong>tasa de fecundidad total</strong> se situó en 1.7 hijos por mujer, 
+    por debajo del nivel de reemplazo poblacional de 2.1 🌱, indicando una reducción en la capacidad de crecimiento natural de la población.  
+    <a href="https://ginecologia.ec/la-natalidad-en-ecuador-cae-a-minimos-historicos-causas-cifras-y-advertencias-para-el-futuro/?utm_source=chatgpt.com" target="_blank">Fuente: Ginecología Ecuador</a>
+  </p>
+
+  <p>
+    Además, el Ministerio de Salud Pública y el Instituto Nacional de Estadística y Censos han presentado resultados de la 
+    <strong>Encuesta Nacional de Demografía y Salud Sexual y Reproductiva</strong>, proporcionando datos clave sobre la salud reproductiva en el país.  
+    <a href="https://www.ecuadorencifras.gob.ec/msp-e-inec-presentan-resultados-de-demografia-y-salud-sexual-y-reproductiva/?utm_source=chatgpt.com" target="_blank">Fuente: MSP & INEC</a>
+  </p>
+
+  <p>
+    En este contexto, herramientas como este comparador de packs de fertilidad ayudan a tomar decisiones informadas, 
+    considerando costos, efectividad y accesibilidad de cada tratamiento ❤️.
+  </p>
+</section>
+
+<section class="section highlight-section">
+  <h2><i class="fa-solid fa-star"></i> Los Packs que Transforman el Camino a la Fertilidad</h2>
+  <div class="benefit-container">
+
+    <div class="benefit-card">
+      <i class="fa-solid fa-heart-circle-plus"></i>
+      <h3>✨ Pack Esperanza: Gonal + Cetrotide + Ovidrel</h3>
+      <p>
+        Diseñado para quienes buscan un impulso completo en su proceso de fertilidad. 
+        Este pack ofrece <strong>estabilidad y soporte hormonal integral</strong>, 
+        creando las condiciones óptimas para un ciclo exitoso.
+      </p>
+    </div>
+
+    <div class="benefit-card">
+      <i class="fa-solid fa-person-circle-check"></i>
+      <h3>🌱 Pack Personalizado: Pergoveris + Cetrotide  + Ovidrel</h3>
+      <p>
+        Ideal para tratamientos que requieren un <strong>enfoque a la medida</strong>. 
+        Pergoveris potencia la estimulación ovárica en mujeres con necesidades 
+        específicas, brindando confianza y un manejo individualizado.
+      </p>
+    </div>
+
+      </div>
+</section>
+
+
+    <!-- Packs -->
+    <section class="section">
+        <h2><i class="fa-solid fa-calculator"></i> Ingresar Datos de Packs</h2>
+        <div class="packs-container-horizontal">
+
+            <!-- Pack A -->
+            <div class="card pack1">
+                <h3>Pack A: Gonal 900 ×2 + Gonal 450 ×1 + Cetrotide + Ovidrel</h3>
+                <table class="inputs-table">
+                    <tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Descuento (%)</th></tr>
+                    <tr><td>Gonal 900</td><td><input type="number" id="priceGonal900" value="495"></td><td><input type="number" id="qtyGonal900" value="2"></td><td><input type="number" id="discountGonal900" value="0" min="0" max="20"></td></tr>
+                    <tr><td>Gonal 450</td><td><input type="number" id="priceGonal450" value="247.5"></td><td><input type="number" id="qtyGonal450" value="1"></td><td><input type="number" id="discountGonal450" value="0" min="0" max="20"></td></tr>
+                    <tr><td>Cetrotide</td><td><input type="number" id="priceCetA" value="36.25"></td><td><input type="number" id="qtyCetA" value="5"></td><td><input type="number" id="discountCetA" value="0" min="0" max="20"></td></tr>
+                    <tr><td>Ovidrel</td><td><input type="number" id="priceOvidA" value="56"></td><td><input type="number" id="qtyOvidA" value="1"></td><td>—</td></tr>
+                    <tr><td><strong>Costo Total:</strong></td><td><input type="number" id="costPackA" readonly></td><td><input type="number" id="unitsSoldPackA" placeholder="Unidades Vendidas"></td><td></td></tr>
+                </table>
+            </div>
+
+            <!-- Pack B -->
+            <div class="card pack2">
+                <h3>Pack B: Pergoveris 900 + Pergoveris 300 + Cetrotide + Ovidrel</h3>
+                <table class="inputs-table">
+                    <tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Descuento (%)</th></tr>
+                    <tr><td>Pergoveris 900</td><td><input type="number" id="pricePer900" value="526.60"></td><td><input type="number" id="qtyPer900" value="3"></td><td><input type="number" id="discountPer900" value="0" min="0" max="20"></td></tr>
+                    <tr><td>Pergoveris 300</td><td><input type="number" id="pricePer300" value="175.50"></td><td><input type="number" id="qtyPer300" value="1"></td><td><input type="number" id="discountPer300" value="0" min="0" max="20"></td></tr>
+                    <tr><td>Cetrotide</td><td><input type="number" id="priceCetB" value="36.25"></td><td><input type="number" id="qtyCetB" value="5"></td><td><input type="number" id="discountCetB" value="0" min="0" max="20"></td></tr>
+                    <tr><td>Ovidrel</td><td><input type="number" id="priceOvidB" value="56"></td><td><input type="number" id="qtyOvidB" value="1"></td><td>—</td></tr>
+                    <tr><td><strong>Costo Total:</strong></td><td><input type="number" id="costPackB" readonly></td><td><input type="number" id="unitsSoldPackB" placeholder="Unidades Vendidas"></td><td></td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="button-container">
+            <button onclick="calculateResults()">Calcular Packs</button>
+        </div>
+    </section>
+
+ <!-- Resultados Detallados -->
+<section class="section" id="resultsTable">
+    <h2>Resultados Detallados</h2>
+    <div class="results-table-container" style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Pack</th>
+                    <th>Costo Total</th>
+                    <th>Unidades Vendidas</th>
+                    <th>Precio Promedio</th>
+                    <th>Ingresos</th>
+                    <th>Utilidad</th>
+                </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+        </table>
+    </div>
+    
+    <!-- Gráfico abajo -->
+    <div style="margin-top:2rem;">
+        <h2>📈 Rentabilidad por Pack</h2>
+        <canvas id="profitChart"></canvas>
+    </div>
+</section>
+
+<script>
+let profitChart = null;
+
+// Formateo de números como moneda
+function formatCurrency(value) {
+    return value.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 });
+}
+
+// Función principal para calcular tabla y gráfico
+function calculateResults() {
+   // 🔹 Validar descuentos antes de calcular
+    document.querySelectorAll('input[type="number"][id^="discount"]').forEach(input => {
+        if (parseFloat(input.value) > 20) {
+            input.value = 20;
+        }
+        if (parseFloat(input.value) < 0) {
+            input.value = 0;
+        }
+    });
+    const packs = [
+        {
+            name: "Pack A",
+            components: [
+                { priceId:'priceGonal900', qtyId:'qtyGonal900', discountId:'discountGonal900' },
+                { priceId:'priceGonal450', qtyId:'qtyGonal450', discountId:'discountGonal450' },
+                { priceId:'priceCetA', qtyId:'qtyCetA', discountId:'discountCetA' },
+                { priceId:'priceOvidA', qtyId:'qtyOvidA', discountId:null }
+            ],
+            unitsSoldId: 'unitsSoldPackA',
+            costInputId: 'costPackA'
+        },
+        {
+            name: "Pack B",
+            components: [
+                { priceId:'pricePer900', qtyId:'qtyPer900', discountId:'discountPer900' },
+                { priceId:'pricePer300', qtyId:'qtyPer300', discountId:'discountPer300' },
+                { priceId:'priceCetB', qtyId:'qtyCetB', discountId:'discountCetB' },
+                { priceId:'priceOvidB', qtyId:'qtyOvidB', discountId:null }
+            ],
+            unitsSoldId: 'unitsSoldPackB',
+            costInputId: 'costPackB'
+        }
+    ];
+
+    const resultsBody = document.getElementById('resultsBody');
+    resultsBody.innerHTML = '';
+
+    let totalMargins = 0;
+    let minCost = Infinity;
+    let maxProfit = -Infinity;
+    let bestPack = '';
+    let cheapestPack = '';
+
+    packs.forEach(pack => {
+        const unitsSold = parseFloat(document.getElementById(pack.unitsSoldId).value) || 1;
+
+        let totalCostUnit = 0;
+        let totalNetUnit = 0;
+
+        // Sumar costo y ventas por componente
+        pack.components.forEach(c => {
+            const price = parseFloat(document.getElementById(c.priceId).value) || 0;
+            const qty = parseFloat(document.getElementById(c.qtyId).value) || 0;
+            const discount = c.discountId ? (parseFloat(document.getElementById(c.discountId).value) || 0)/100 : 0;
+            const cost = price * qty;
+            const net = cost * (1 - discount);
+
+            totalCostUnit += cost;
+            totalNetUnit += net;
+        });
+
+        const totalCost = totalCostUnit * unitsSold;
+        const salesNet = totalNetUnit * unitsSold;
+        const margin = salesNet - totalCost;
+        const avgCostPerUnit = totalCostUnit;
+
+        // Actualizar input de costo total
+        document.getElementById(pack.costInputId).value = totalCostUnit.toFixed(2);
+
+        totalMargins += margin;
+
+        // Determinar KPI
+        if(margin > maxProfit){ maxProfit = margin; bestPack = pack.name; }
+        if(totalCost < minCost){ minCost = totalCost; cheapestPack = pack.name; }
+
+        // Fila normal
+        resultsBody.innerHTML += `<tr>
+            <td>${pack.name}</td>
+            <td>${formatCurrency(totalCost)}</td>
+            <td>${unitsSold}</td>
+            <td>${formatCurrency(avgCostPerUnit)}</td>
+            <td>${formatCurrency(salesNet)}</td>
+            <td>${formatCurrency(margin)}</td>
+        </tr>`;
+
+        // 🔹 Fila optimización ⚡ dinámica
+// 🔹 Fila optimización ⚡ dinámica
+const opt = {
+    precioPaciente: totalNetUnit, // precio promedio neto actual
+    descuento: 1 - (totalNetUnit / totalCostUnit), // sugerencia de descuento sin pérdida
+    ganancia: (totalNetUnit - totalCostUnit) * unitsSold
+};
+
+resultsBody.innerHTML += `<tr class="optimized">
+    <td>⚡ Óptimo ${pack.name}</td>
+    <td colspan="2">Precio óptimo: ${formatCurrency(opt.precioPaciente.toFixed(2))}, Descuento óptimo: ${(opt.descuento*100).toFixed(0)}%</td>
+    <td colspan="2">Ganancia máxima: ${formatCurrency(opt.ganancia.toFixed(2))}</td>
+    <td></td>
+</tr>`;
+
+    });
+
+    // KPIs
+    document.getElementById('kpi-rentable').innerText = bestPack;
+    document.getElementById('kpi-economico').innerText = cheapestPack;
+    document.getElementById('kpi-ahorro').innerText = ((totalMargins / packs.length).toFixed(2)) + ' $';
+
+    // Gráfico
+    const ctx = document.getElementById('profitChart').getContext('2d');
+    if(profitChart) profitChart.destroy();
+
+    profitChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: packs.map(p => p.name),
+            datasets: [
+                { 
+                    label: 'Ventas Netas', 
+                    data: packs.map(p => {
+                        let netUnit = 0;
+                        p.components.forEach(c => {
+                            const price = parseFloat(document.getElementById(c.priceId).value) || 0;
+                            const qty = parseFloat(document.getElementById(c.qtyId).value) || 0;
+                            const discount = c.discountId ? (parseFloat(document.getElementById(c.discountId).value) || 0)/100 : 0;
+                            netUnit += price * qty * (1 - discount);
+                        });
+                        return netUnit * (parseFloat(document.getElementById(p.unitsSoldId).value) || 1);
+                    }), 
+                    backgroundColor: '#d5006d' 
+                },
+                { 
+                    label: 'Costo Total', 
+                    data: packs.map(p => {
+                        let costUnit = 0;
+                        p.components.forEach(c => {
+                            const price = parseFloat(document.getElementById(c.priceId).value) || 0;
+                            const qty = parseFloat(document.getElementById(c.qtyId).value) || 0;
+                            costUnit += price * qty;
+                        });
+                        return costUnit * (parseFloat(document.getElementById(p.unitsSoldId).value) || 1);
+                    }), 
+                    backgroundColor: '#ffb3c6' 
+                }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+}
+// Ejecutar cálculo al cargar la página
+calculateResults();
+
+</script>
+
+</body>
+</html>
